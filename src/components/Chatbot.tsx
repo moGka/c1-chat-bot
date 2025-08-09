@@ -14,7 +14,7 @@ const Chatbot: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'Hello! I\'m Grok, your AI assistant. I\'m here to help you with anything you need. What would you like to know?',
+      content: 'Hello! I\'m ChatBot, your AI assistant. I\'m here to help you with anything you need. What would you like to know?',
       role: 'assistant',
       timestamp: new Date(),
     }
@@ -124,7 +124,7 @@ What's driving your interest in this particular topic?`
               <span className="text-white font-bold text-base md:text-lg">G</span>
             </div>
             <div className="ml-3 md:ml-4">
-              <h1 className="text-lg md:text-xl font-semibold text-grok-text">Grok</h1>
+              <h1 className="text-lg md:text-xl font-semibold text-grok-text">Chat Bot</h1>
               <p className="text-xs md:text-sm text-grok-text-secondary">AI Assistant</p>
             </div>
           </div>
