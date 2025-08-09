@@ -1,0 +1,11 @@
+name = "deepseek-chat-api"
+main = "src/worker/index.ts"
+compatibility_date = "2023-12-01"
+
+[env.production.vars]
+DEEPSEEK_API_KEY = "sk-acd1d3699e9d433e8d96d9d74c5a73de"
+DEEPSEEK_API_BASE = "https://api.deepseek.com/v1"
+
+[env.development.vars]
+DEEPSEEK_API_KEY = "sk-acd1d3699e9d433e8d96d9d74c5a73de"
+DEEPSEEK_API_BASE = "https://api.deepseek.com/v1"

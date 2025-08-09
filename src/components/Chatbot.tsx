@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ChatMessageList from './ChatMessageList';
 import ChatInput from './ChatInput';
+import { graphqlClient, Message as APIMessage } from '../api/graphql';
 
 export interface Message {
   id: string;
@@ -14,7 +15,7 @@ const Chatbot: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'Hello! I\'m Grok, your AI assistant. I\'m here to help you with anything you need. What would you like to know?',
+      content: 'Hello! I\'m DeepSeek AI, your intelligent assistant. I\'m here to help you with questions, tasks, coding, writing, and much more. What would you like to explore today?',
       role: 'assistant',
       timestamp: new Date(),
     }
@@ -30,75 +31,64 @@ const Chatbot: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const simulateTypingResponse = (content: string): Promise<void> => {
-    return new Promise((resolve) => {
-      // Add typing indicator
-      const typingMessage: Message = {
-        id: `typing-${Date.now()}`,
-        content: '',
-        role: 'assistant',
-        timestamp: new Date(),
-        isTyping: true,
-      };
-      
-      setMessages(prev => [...prev, typingMessage]);
-      
-      // Simulate realistic response time
-      const responseTime = Math.min(content.length * 50 + 1000, 3000);
-      
-      setTimeout(() => {
-        setMessages(prev => {
-          const newMessages = prev.filter(msg => msg.id !== typingMessage.id);
-          return [
-            ...newMessages,
-            {
-              id: Date.now().toString(),
-              content: generateSmartResponse(content),
-              role: 'assistant',
-              timestamp: new Date(),
-            }
-          ];
-        });
-        setIsLoading(false);
-        resolve();
-      }, responseTime);
-    });
-  };
-
-  const generateSmartResponse = (userInput: string): string => {
-    const responses = [
-      `That's an interesting question about "${userInput}". Let me think about this...
-
-Based on what you're asking, I'd say this is a complex topic that deserves a thoughtful response. Here are a few key points to consider:
-
-• The context of your question is important
-• There are multiple perspectives to explore
-• The implications can be quite broad
-
-What specific aspect would you like me to dive deeper into?`,
-      
-      `Great question! Regarding "${userInput}", I think there's a lot we can explore here.
-
-From my perspective, this touches on several important areas:
-
-1. **Context matters**: Understanding the background is crucial
-2. **Multiple approaches**: There are usually several ways to approach this
-3. **Practical considerations**: Real-world application is key
-
-Would you like me to elaborate on any of these points?`,
-      
-      `I find your question about "${userInput}" quite fascinating. This is exactly the kind of inquiry that makes our conversation meaningful.
-
-Here's how I see it:
-- There are both immediate and long-term considerations
-- Different stakeholders might have varying perspectives  
-- The devil is often in the details
-
-What's driving your interest in this particular topic?`
-    ];
+  const getAIResponse = async (userMessage: string): Promise<void> => {
+    // Add typing indicator
+    const typingMessage: Message = {
+      id: `typing-${Date.now()}`,
+      content: '',
+      role: 'assistant',
+      timestamp: new Date(),
+      isTyping: true,
+    };
     
-    return responses[Math.floor(Math.random() * responses.length)];
+    setMessages(prev => [...prev, typingMessage]);
+
+    try {
+      // Prepare conversation history for API
+      const conversationHistory: APIMessage[] = messages
+        .filter(msg => !msg.isTyping && msg.role !== 'assistant' || msg.id === '1') // Include initial message and user messages
+        .map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+
+      // Call DeepSeek API via Cloudflare Workers
+      const response = await graphqlClient.chat({
+        message: userMessage,
+        conversationHistory
+      });
+
+      setMessages(prev => {
+        const newMessages = prev.filter(msg => msg.id !== typingMessage.id);
+        return [
+          ...newMessages,
+          {
+            id: Date.now().toString(),
+            content: response.success ? response.message : `Error: ${response.error || 'Failed to get response'}`,
+            role: 'assistant',
+            timestamp: new Date(),
+          }
+        ];
+      });
+    } catch (error) {
+      console.error('Failed to get AI response:', error);
+      setMessages(prev => {
+        const newMessages = prev.filter(msg => msg.id !== typingMessage.id);
+        return [
+          ...newMessages,
+          {
+            id: Date.now().toString(),
+            content: `Sorry, I'm having trouble connecting to the AI service. Please try again later.`,
+            role: 'assistant',
+            timestamp: new Date(),
+          }
+        ];
+      });
+    }
+
+    setIsLoading(false);
   };
+
 
   const handleSendMessage = async (content: string) => {
     const userMessage: Message = {
@@ -111,7 +101,7 @@ What's driving your interest in this particular topic?`
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
     
-    await simulateTypingResponse(content);
+    await getAIResponse(content);
   };
 
   return (
@@ -124,8 +114,8 @@ What's driving your interest in this particular topic?`
               <span className="text-white font-bold text-base md:text-lg">G</span>
             </div>
             <div className="ml-3 md:ml-4">
-              <h1 className="text-lg md:text-xl font-semibold text-grok-text">Grok</h1>
-              <p className="text-xs md:text-sm text-grok-text-secondary">AI Assistant</p>
+              <h1 className="text-lg md:text-xl font-semibold text-grok-text">DeepSeek Chat</h1>
+              <p className="text-xs md:text-sm text-grok-text-secondary">Powered by DeepSeek AI</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
