@@ -1,4 +1,4 @@
-name = "deepseek-chat-api"
+name = "c1-chat-bot"
 main = "src/worker/index.ts"
 compatibility_date = "2023-12-01"
 
