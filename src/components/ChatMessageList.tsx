@@ -4,6 +4,7 @@ import { Message } from './Chatbot';
 
 interface ChatMessageListProps {
   messages: Message[];
+  messagesEndRef: React.RefObject<HTMLDivElement>;
 }
 
 const TypingIndicator: React.FC = () => {
@@ -19,7 +20,7 @@ const TypingIndicator: React.FC = () => {
   );
 };
 
-const ChatMessageList: React.FC<ChatMessageListProps> = ({ messages }) => {
+const ChatMessageList: React.FC<ChatMessageListProps> = ({ messages, messagesEndRef }) => {
   return (
     <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6 scroll-smooth">
       {messages.map((message, index) => (
@@ -131,6 +132,7 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({ messages }) => {
           </div>
         </div>
       ))}
+      <div ref={messagesEndRef} />
     </div>
   );
 };

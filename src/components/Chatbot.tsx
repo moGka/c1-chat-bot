@@ -224,10 +224,9 @@ const Chatbot: React.FC = () => {
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full max-w-4xl mx-auto">
-          <ChatMessageList messages={messages} />
-          <div ref={messagesEndRef} />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 max-w-4xl mx-auto w-full flex flex-col overflow-hidden">
+          <ChatMessageList messages={messages} messagesEndRef={messagesEndRef} />
         </div>
       </div>
 
