@@ -14,7 +14,7 @@ const TypingIndicator: React.FC = () => {
         <div className="typing-dot" style={{ '--delay': 1 } as React.CSSProperties}></div>
         <div className="typing-dot" style={{ '--delay': 2 } as React.CSSProperties}></div>
       </div>
-      <span className="text-grok-text-secondary text-sm ml-2">Grok is thinking...</span>
+      <span className="text-grok-text-secondary text-sm ml-2">thinking...</span>
     </div>
   );
 };

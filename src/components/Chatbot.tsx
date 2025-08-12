@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useMutation, useQuery } from '@apollo/client'
 import ChatMessageList from './ChatMessageList';
 import ChatInput from './ChatInput';
+import { SEND_MESSAGE, GET_MODELS_QUERY } from '../graphql/queries';
 
 export interface Message {
   id: string;
@@ -53,7 +55,7 @@ const Chatbot: React.FC = () => {
             ...newMessages,
             {
               id: Date.now().toString(),
-              content: generateSmartResponse(content),
+              content: content,
               role: 'assistant',
               timestamp: new Date(),
             }
@@ -63,41 +65,6 @@ const Chatbot: React.FC = () => {
         resolve();
       }, responseTime);
     });
-  };
-
-  const generateSmartResponse = (userInput: string): string => {
-    const responses = [
-      `That's an interesting question about "${userInput}". Let me think about this...
-
-Based on what you're asking, I'd say this is a complex topic that deserves a thoughtful response. Here are a few key points to consider:
-
-• The context of your question is important
-• There are multiple perspectives to explore
-• The implications can be quite broad
-
-What specific aspect would you like me to dive deeper into?`,
-      
-      `Great question! Regarding "${userInput}", I think there's a lot we can explore here.
-
-From my perspective, this touches on several important areas:
-
-1. **Context matters**: Understanding the background is crucial
-2. **Multiple approaches**: There are usually several ways to approach this
-3. **Practical considerations**: Real-world application is key
-
-Would you like me to elaborate on any of these points?`,
-      
-      `I find your question about "${userInput}" quite fascinating. This is exactly the kind of inquiry that makes our conversation meaningful.
-
-Here's how I see it:
-- There are both immediate and long-term considerations
-- Different stakeholders might have varying perspectives  
-- The devil is often in the details
-
-What's driving your interest in this particular topic?`
-    ];
-    
-    return responses[Math.floor(Math.random() * responses.length)];
   };
 
   const handleSendMessage = async (content: string) => {
@@ -110,9 +77,130 @@ What's driving your interest in this particular topic?`
 
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
-    
-    await simulateTypingResponse(content);
+
+    // Add typing indicator
+    const typingMessage: Message = {
+      id: `typing-${Date.now()}`,
+      content: '',
+      role: 'assistant',
+      timestamp: new Date(),
+      isTyping: true,
+    };
+    setMessages(prev => [...prev, typingMessage]);
+
+    const resMessage = await sendMessage(content);
+
+    setMessages(prev => {
+      const newMessages = prev.filter(msg => msg.id !== typingMessage.id);
+      return [
+        ...newMessages,
+        {
+          id: Date.now().toString(),
+          content: resMessage,
+          role: 'assistant',
+          timestamp: new Date(),
+        }
+      ];
+    });
+    setIsLoading(false);
   };
+
+  interface Usage {
+    promptTokens: number
+    completionTokens: number
+    totalTokens: number
+  }
+
+  interface ChatInput {
+    inPut: {
+      message: string
+      model: string
+      temperature: string
+      maxTokens: string
+      systemPrompt: string
+    }
+  }
+
+  interface ChatResponse {
+    chat: {
+      id: string
+      message: string
+      model: string
+      usage: Usage
+      conversationId: string
+      timestamp: string
+      finishReason: string
+    }
+  }
+
+  interface SendMessageVariables {
+    content: string
+    sessionId?: string
+  }
+
+  const [sendMessageMutation, { loading }] = useMutation<ChatResponse> (
+    SEND_MESSAGE,
+    {
+      onError: (error) => {
+        console.error('GraphQL Error:', error)
+      }
+    }
+  )
+
+  const sendMessage = async (content: string) => {
+    console.log(`发送的消息: ${content}`)
+    try {
+      const { data } = await sendMessageMutation({
+        variables: {
+          input: {
+            message: content,
+            model: "deepseek-chat",
+            temperature: 0.7,
+            maxTokens: 2000,
+            systemPrompt: "你是一个友好的AI助手"
+          },
+          sessionId: 'default-session-id' // Replace with actual session ID if needed
+        }
+      });
+      console.log(data)
+      
+      if (data?.chat) {
+        return data.chat.message
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+    return ""
+  }
+
+  /*
+  async function sendChatMessage(message: string): string {
+    console.log(`发送的消息${message}`)
+    try {
+      const { data } = await sendMessageMutation({
+        variables: {
+          input: {
+            message: message,
+            model: "deepseek-chat",
+            temperature: 0.7,
+            maxTokens: 2000,
+            systemPrompt: "你是一个友好的AI助手"
+          },
+          sessionId: 'default-session-id' // Replace with actual session ID if needed
+        }
+      });
+      console.log(data)
+      
+      if (data?.chat) {
+        await simulateTypingResponse(data.chat.message);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  }
+    */
+
+  
 
   return (
     <div className="flex flex-col h-screen">
